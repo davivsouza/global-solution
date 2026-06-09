@@ -8,6 +8,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { lavouraService } from '../../../src/services/lavouraService';
 import { Input } from '../../../src/components/Input';
@@ -55,8 +56,17 @@ export default function CreateLavouraScreen() {
     setLoading(true);
     try {
       await lavouraService.criar(form);
+      setForm({
+        nome: '',
+        tipo: '',
+        area: '',
+        latitude: '',
+        longitude: '',
+        descricao: '',
+        status: 'ATIVA',
+      });
       Alert.alert('Sucesso', 'Lavoura cadastrada com sucesso!', [
-        { text: 'OK', onPress: () => router.back() },
+        { text: 'OK', onPress: () => router.replace('/(tabs)') },
       ]);
     } catch (error: any) {
       const message = error.response?.data?.error || 'Erro ao cadastrar lavoura.';
@@ -67,87 +77,93 @@ export default function CreateLavouraScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.header}>
-          <Text style={styles.emoji}>🌱</Text>
-          <Text style={styles.title}>Nova Lavoura</Text>
-          <Text style={styles.subtitle}>Preencha os dados da sua lavoura</Text>
-        </View>
-
-        <View style={styles.form}>
-          <Input
-            label="Nome da Lavoura"
-            value={form.nome}
-            onChangeText={(v) => updateField('nome', v)}
-            placeholder="Ex: Fazenda Santa Maria"
-            error={errors.nome}
-          />
-
-          <Input
-            label="Tipo de Cultura"
-            value={form.tipo}
-            onChangeText={(v) => updateField('tipo', v)}
-            placeholder="Ex: Soja, Milho, Café"
-            error={errors.tipo}
-          />
-
-          <Input
-            label="Área (hectares)"
-            value={form.area}
-            onChangeText={(v) => updateField('area', v)}
-            placeholder="Ex: 150.5"
-            keyboardType="decimal-pad"
-            error={errors.area}
-          />
-
-          <View style={styles.row}>
-            <View style={styles.half}>
-              <Input
-                label="Latitude"
-                value={form.latitude}
-                onChangeText={(v) => updateField('latitude', v)}
-                placeholder="Ex: -23.55"
-                keyboardType="numbers-and-punctuation"
-                error={errors.latitude}
-              />
-            </View>
-            <View style={styles.half}>
-              <Input
-                label="Longitude"
-                value={form.longitude}
-                onChangeText={(v) => updateField('longitude', v)}
-                placeholder="Ex: -46.63"
-                keyboardType="numbers-and-punctuation"
-                error={errors.longitude}
-              />
-            </View>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
+            <Text style={styles.emoji}>🌱</Text>
+            <Text style={styles.title}>Nova Lavoura</Text>
+            <Text style={styles.subtitle}>Preencha os dados da sua lavoura</Text>
           </View>
 
-          <Input
-            label="Descrição (opcional)"
-            value={form.descricao}
-            onChangeText={(v) => updateField('descricao', v)}
-            placeholder="Detalhes adicionais da lavoura"
-            multiline
-            numberOfLines={3}
-            style={{ height: 80, textAlignVertical: 'top', paddingTop: 12 }}
-          />
+          <View style={styles.form}>
+            <Input
+              label="Nome da Lavoura"
+              value={form.nome}
+              onChangeText={(v) => updateField('nome', v)}
+              placeholder="Ex: Fazenda Santa Maria"
+              error={errors.nome}
+            />
 
-          <Button title="Cadastrar Lavoura" onPress={handleCreate} loading={loading} />
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            <Input
+              label="Tipo de Cultura"
+              value={form.tipo}
+              onChangeText={(v) => updateField('tipo', v)}
+              placeholder="Ex: Soja, Milho, Café"
+              error={errors.tipo}
+            />
+
+            <Input
+              label="Área (hectares)"
+              value={form.area}
+              onChangeText={(v) => updateField('area', v)}
+              placeholder="Ex: 150.5"
+              keyboardType="decimal-pad"
+              error={errors.area}
+            />
+
+            <View style={styles.row}>
+              <View style={styles.half}>
+                <Input
+                  label="Latitude"
+                  value={form.latitude}
+                  onChangeText={(v) => updateField('latitude', v)}
+                  placeholder="Ex: -23.55"
+                  keyboardType="numbers-and-punctuation"
+                  error={errors.latitude}
+                />
+              </View>
+              <View style={styles.half}>
+                <Input
+                  label="Longitude"
+                  value={form.longitude}
+                  onChangeText={(v) => updateField('longitude', v)}
+                  placeholder="Ex: -46.63"
+                  keyboardType="numbers-and-punctuation"
+                  error={errors.longitude}
+                />
+              </View>
+            </View>
+
+            <Input
+              label="Descrição (opcional)"
+              value={form.descricao}
+              onChangeText={(v) => updateField('descricao', v)}
+              placeholder="Detalhes adicionais da lavoura"
+              multiline
+              numberOfLines={3}
+              style={{ height: 80, textAlignVertical: 'top', paddingTop: 12 }}
+            />
+
+            <Button title="Cadastrar Lavoura" onPress={handleCreate} loading={loading} />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.bgPrimary,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.bgPrimary,

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { Button } from '../../src/components/Button';
@@ -23,53 +24,55 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.avatarSection}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {user?.nome?.charAt(0)?.toUpperCase() || '?'}
-          </Text>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.container}>
+        <View style={styles.avatarSection}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>
+              {user?.nome?.charAt(0)?.toUpperCase() || '?'}
+            </Text>
+          </View>
+          <Text style={styles.name}>{user?.nome}</Text>
+          <Text style={styles.email}>{user?.email}</Text>
         </View>
-        <Text style={styles.name}>{user?.nome}</Text>
-        <Text style={styles.email}>{user?.email}</Text>
-      </View>
 
-      <View style={styles.card}>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>ID do Usuário</Text>
-          <Text style={styles.infoValue}>{user?.id}</Text>
+        <View style={styles.card}>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Nome</Text>
+            <Text style={styles.infoValue}>{user?.nome}</Text>
+          </View>
+          <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
+            <Text style={styles.infoLabel}>Email</Text>
+            <Text style={styles.infoValue}>{user?.email}</Text>
+          </View>
         </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Nome</Text>
-          <Text style={styles.infoValue}>{user?.nome}</Text>
+
+        <View style={styles.card}>
+          <Button
+            title="📱  Sobre o App"
+            variant="secondary"
+            onPress={() => router.push('/about')}
+          />
         </View>
-        <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
-          <Text style={styles.infoLabel}>Email</Text>
-          <Text style={styles.infoValue}>{user?.email}</Text>
+
+        <View style={styles.logoutSection}>
+          <Button title="Sair da Conta" variant="danger" onPress={handleLogout} />
         </View>
-      </View>
 
-      <View style={styles.card}>
-        <Button
-          title="📱  Sobre o App"
-          variant="secondary"
-          onPress={() => router.push('/about')}
-        />
+        <Text style={styles.footer}>
+          AgroSat v1.0.0{'\n'}
+          Monitoramento Agrícola com Satélite e IA
+        </Text>
       </View>
-
-      <View style={styles.logoutSection}>
-        <Button title="Sair da Conta" variant="danger" onPress={handleLogout} />
-      </View>
-
-      <Text style={styles.footer}>
-        AgroSat v1.0.0{'\n'}
-        Monitoramento Agrícola com Satélite e IA
-      </Text>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.bgPrimary,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.bgPrimary,

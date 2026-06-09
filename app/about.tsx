@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform } from 'react-native';
-import { Stack } from 'expo-router';
+import { View, Text, ScrollView, StyleSheet, Platform, TouchableOpacity } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import { colors, spacing, radius } from '../src/theme/colors';
 
 export default function AboutScreen() {
+  const router = useRouter();
   const commitHash = Constants.expoConfig?.extra?.commitHash || 'dev';
 
   return (
@@ -70,7 +71,17 @@ export default function AboutScreen() {
           <Text style={styles.cardText}>
             Projeto desenvolvido como parte da Global Solution — FIAP 2026.
           </Text>
+          <View style={{ marginTop: 12, gap: 4 }}>
+            <Text style={styles.cardText}>• Davi Vasconcelos Souza (RM: 559906)</Text>
+            <Text style={styles.cardText}>• Gustavo Dantas Oliveira (RM: 560685)</Text>
+            <Text style={styles.cardText}>• Arthur Henrique Marino de Oliveira Borges (RM: 560820)</Text>
+            <Text style={styles.cardText}>• Gustavo Alves Ramos (RM: 561055)</Text>
+          </View>
         </View>
+
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Text style={styles.backButtonText}>Voltar</Text>
+        </TouchableOpacity>
 
         <Text style={styles.footer}>
           © 2026 AgroSat — Global Solution{'\n'}
@@ -210,6 +221,20 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontWeight: '500',
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  backButton: {
+    backgroundColor: colors.bgCard,
+    borderWidth: 1,
+    borderColor: colors.borderPrimary,
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textPrimary,
   },
   footer: {
     textAlign: 'center',

@@ -9,7 +9,7 @@
     "scheme": "agrosat",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.globalsolution.agrosat"
+      "bundleIdentifier": "com.agrosat.com"
     },
     "android": {
       "adaptiveIcon": {
@@ -18,7 +18,8 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.globalsolution.agrosat"
+      "package": "com.agrosat.com",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -32,7 +33,11 @@
       "expo-splash-screen"
     ],
     "extra": {
-      "commitHash": "dev"
+      "commitHash": "dev",
+      "router": {},
+      "eas": {
+        "projectId": "505e85e6-614d-4ea3-9fba-489c58d6249d"
+      }
     }
   }
 }

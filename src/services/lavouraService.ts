@@ -3,8 +3,11 @@ import { Lavoura, LavouraFormData } from '../types';
 
 export const lavouraService = {
   async listar(): Promise<Lavoura[]> {
-    const response = await api.get<Lavoura[]>('/lavouras');
-    return response.data;
+    const response = await api.get<any>('/lavouras');
+    if (response.data && response.data._embedded && response.data._embedded.lavouraResponseList) {
+      return response.data._embedded.lavouraResponseList;
+    }
+    return Array.isArray(response.data) ? response.data : [];
   },
 
   async buscarPorId(id: number): Promise<Lavoura> {
