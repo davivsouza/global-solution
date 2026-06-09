@@ -10,7 +10,7 @@ import * as SecureStore from 'expo-secure-store';
  * - Physical device: use your computer's IP (e.g., '192.168.1.100')
  */
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
