@@ -12,8 +12,7 @@ Este projeto representa a entrega de **Mobile Application Development (MAD)** pa
 
 ---
 
-## 🎥 Pitch e Demonstração
-👉 **[Link do Vídeo no YouTube (Insira seu link aqui)](https://youtube.com)**
+👉 **[Assistir ao Vídeo do Projeto no YouTube](https://youtu.be/Ml0gHfLxjiI)**
 
 ---
 
