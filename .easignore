@@ -1,5 +1,3 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
 # dependencies
 node_modules/
 
@@ -9,7 +7,7 @@ dist/
 web-build/
 expo-env.d.ts
 
-# Native
+# Native build folders
 .kotlin/
 *.orig.*
 *.jks
@@ -30,15 +28,9 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
-.env
-.env*
-
 # typescript
 *.tsbuildinfo
 
 # generated native folders
 /ios
 /android
-
-# Google Services (Firebase)

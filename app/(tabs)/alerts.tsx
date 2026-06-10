@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { colors, spacing, radius } from '../../src/theme/colors';
 import { lavouraService } from '../../src/services/lavouraService';
 import { Lavoura } from '../../src/types';
+import { useAuth } from '../../src/contexts/AuthContext';
 
 type AppAlert = {
   id: string;
@@ -70,6 +71,7 @@ const generateAlertsForLavouras = (lavouras: Lavoura[]): AppAlert[] => {
 };
 
 export default function AlertsScreen() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [alerts, setAlerts] = useState<AppAlert[]>([]);
 
@@ -87,8 +89,9 @@ export default function AlertsScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (!user) return;
       fetchAlerts();
-    }, [])
+    }, [user])
   );
 
   if (loading) {

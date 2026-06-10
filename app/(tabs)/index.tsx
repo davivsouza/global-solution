@@ -11,7 +11,7 @@ import { Lavoura } from '../../src/types';
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [lavouras, setLavouras] = useState<Lavoura[]>([]);
   const [climate, setClimate] = useState<ClimateAnalysis | null>(null);
   const [aiTip, setAiTip] = useState<string | null>(null);
@@ -69,8 +69,9 @@ export default function DashboardScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (!user) return;
       fetchData();
-    }, [])
+    }, [user])
   );
 
   const handleRefresh = () => {
