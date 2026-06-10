@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "3025098276",
+    "project_id": "agrosat-8edfa",
+    "storage_bucket": "agrosat-8edfa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:3025098276:android:8168f77537267d7622eab1",
+        "android_client_info": {
+          "package_name": "com.agrosat.com"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFzjIfeQyMpreov_k8-NsLwS5xOfMLNE8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
