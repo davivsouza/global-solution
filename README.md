@@ -21,10 +21,13 @@ Este projeto representa a entrega de **Mobile Application Development (MAD)** pa
 O App Mobile moderno e altamente interativo preenche 100% dos requisitos de entrega de MAD.
 
 - **Autenticação Segura:** Telas protegidas de Login/Cadastro manipulando **JWT (Bearer Tokens)** guardados sob criptografia local usando `expo-secure-store` e gerenciamento global com a **Context API**.
-- **Múltiplas Telas Funcionais (6+):** Fluxos dinâmicos construídos: Auth (Login/Cadastro), Lista de Lavouras, Dashboard Inteligente, Cadastro Espacial de Fazenda, Alertas NASA e Perfil/Sobre o App.
+- **Múltiplas Telas Funcionais (6+):** Fluxos dinâmicos construídos: Auth (Login/Cadastro), Lista de Lavouras, Dashboard Inteligente, Cadastro Espacial de Fazenda, Alertas NASA/AgroSat e Perfil/Sobre o App.
 - **Integração CRUD:** Comunicação fluida via `Axios` para criar, ler, atualizar e deletar lavouras junto ao Backend Spring Boot.
-- **Navegação com Expo Router:** Abordagem super moderna baseada no *File System*, combinando perfeitamente Stack Navigation (para sobreposição de fluxo de login) e Tabs Bottom Navigation (para a interface principal de navegação rápida).
-- **Design System Premium:** Adoção de uma UI *Dark-Agriculture-Green* focada em conversão. Uso intenso de micro-interações, estados de carregamento elegantes (spinners), *glassmorphism*, fontes personalizadas do Google (Inter/Outfit) e adaptação inteligente e nativa ao *Dynamic Island* via `SafeAreaView`.
+- **Painel de Alertas de Satélite e AgroSat:** Tela unificada que integra:
+  * **Alertas Globais da NASA EONET:** Incêndios florestais, tempestades, inundações detectados por satélites da NASA, filtrados por distância em relação às suas fazendas (raio de 500km, 1500km, 3000km, etc.).
+  * **Alertas Locais de Lavouras (AgroMonitoring):** Apresenta dados reais de **Estresse Vegetativo (NDVI)** e barra de progresso com a porcentagem de **Umidade do Solo**, avisando quando as plantas entram em zona de perigo.
+- **Navegação com Expo Router:** Abordagem baseada no *File System*, combinando perfeitamente Stack Navigation (para sobreposição de fluxo de login) e Tabs Bottom Navigation (para a interface principal de navegação rápida).
+- **Design System Premium:** Adoção de uma UI *Dark-Agriculture-Green* focada em conversão. Uso intenso de micro-interações, estados de carregamento elegantes, *glassmorphism*, fontes personalizadas do Google (Inter/Outfit) e adaptação nativa ao *Dynamic Island* via `SafeAreaView`.
 
 ---
 
@@ -32,6 +35,13 @@ O App Mobile moderno e altamente interativo preenche 100% dos requisitos de entr
 
 ### Pré-requisitos
 Certifique-se de que o **Backend Java** já está em execução localmente na porta `8080`.
+
+### Configurando a Conexão com o Backend
+Antes de iniciar, crie ou configure o arquivo `.env` na raiz do diretório `mobile/`:
+```env
+EXPO_PUBLIC_API_URL=http://<IP_DA_SUA_MAQUINA>:8080/api
+```
+> **Atenção:** Se for testar no **Simulador iOS**, pode usar `http://localhost:8080/api`. Se for testar em **Emulador Android**, use `http://10.0.2.2:8080/api`. Caso utilize o **Celular Físico (Expo Go)**, é obrigatório inserir o IP local do seu computador (ex: `http://192.168.15.74:8080/api`), garantindo que ambos os dispositivos estejam no mesmo Wi-Fi.
 
 ### Rodando o App
 1. Instale as dependências:
@@ -45,8 +55,6 @@ npx expo start
 ```
 
 3. Pressione `i` para abrir no simulador iOS, `a` para emulador Android, ou use o aplicativo **Expo Go** no celular escaneando o QR Code.
-
-> **Importante:** Se você for testar o aplicativo no seu **Celular Físico**, é obrigatório alterar o arquivo `src/services/api.ts` e trocar a `baseURL` de `localhost` para o seu **IP local** (Ex: `192.168.1.10:8080`), pois o celular não entenderá o `localhost` do seu computador.
 
 ---
 

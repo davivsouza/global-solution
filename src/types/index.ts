@@ -41,3 +41,25 @@ export interface AlertEvent {
   icon: string;
   color: string;
 }
+
+export interface AppAlert {
+  id: string;
+  title: string;
+  category: string;
+  categoryLabel: string;
+  date: string;
+  icon: any; // Ionicons name or emoji
+  bgColor: string;
+  borderColor: string;
+  severity: 'Extrema' | 'Crítica' | 'Alta' | 'Média' | 'Global / Monitoramento';
+  severityColor: string;
+  distance: string;
+  distanceKm: number;
+  description: string;
+  lavouraNome: string;
+  eventCoords: { latitude: number; longitude: number };
+  lavouraCoords: { latitude: number; longitude: number };
+  nasaUrl?: string;
+  soilMoisture?: number;
+  ndvi?: number;
+}

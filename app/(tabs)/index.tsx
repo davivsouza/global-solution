@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   addButtonText: {
-    color: colors.textInverse,
+    color: colors.bgPrimary,
     fontSize: 15,
     fontWeight: '600',
   },

@@ -1,152 +1,459 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  LayoutAnimation,
+  RefreshControl,
+  Linking,
+  TouchableOpacity,
+} from 'react-native';
 import { useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius } from '../../src/theme/colors';
 import { lavouraService } from '../../src/services/lavouraService';
-import { Lavoura } from '../../src/types';
+import { alertaService } from '../../src/services/alertaService';
+import { climateService } from '../../src/services/climateService';
+import { Lavoura, AppAlert } from '../../src/types';
 import { useAuth } from '../../src/contexts/AuthContext';
 
-type AppAlert = {
-  id: string;
-  title: string;
-  category: string;
-  date: string;
-  icon: string;
-  bgColor: string;
-  borderColor: string;
-  severity: string;
-  distance: string;
-  description: string;
-};
+// Import componentized UI parts
+import { AlertHeader } from '../../src/components/AlertHeader';
+import { AlertFilterControl } from '../../src/components/AlertFilterControl';
+import { AlertCard } from '../../src/components/AlertCard';
 
-const generateAlertsForLavouras = (lavouras: Lavoura[]): AppAlert[] => {
-  if (lavouras.length === 0) return [];
-  
-  const alerts: AppAlert[] = [];
-  
-  lavouras.forEach((lavoura, index) => {
-    if (index % 3 === 0) {
-      alerts.push({
-        id: `alert-${lavoura.id}-1`,
-        title: `Risco de Seca Extrema — ${lavoura.nome}`,
-        category: 'Secas',
-        date: new Date().toISOString(),
-        icon: '🏜️',
-        bgColor: colors.alertDrought,
-        borderColor: 'rgba(245, 158, 11, 0.25)',
-        severity: 'Alta',
-        distance: 'Atingindo sua região',
-        description: 'Os dados do satélite NASA EONET indicam um período anômalo de baixa precipitação e alta evapotranspiração nos próximos 15 dias na área da sua lavoura.',
-      });
-    } else if (index % 3 === 1) {
-      alerts.push({
-        id: `alert-${lavoura.id}-1`,
-        title: `Alerta de Tempestade — ${lavoura.nome}`,
-        category: 'Tempestades',
-        date: new Date().toISOString(),
-        icon: '⛈️',
-        bgColor: colors.alertStorm,
-        borderColor: 'rgba(139, 92, 246, 0.25)',
-        severity: 'Crítica',
-        distance: 'Aprox. 12 km',
-        description: 'Formação de nuvens cumulonimbus densas detectadas por satélite. Risco de granizo e ventos acima de 80 km/h nas próximas 4 horas.',
-      });
-    } else {
-      alerts.push({
-        id: `alert-${lavoura.id}-1`,
-        title: `Foco de Incêndio — ${lavoura.nome}`,
-        category: 'Incêndios',
-        date: new Date().toISOString(),
-        icon: '🔥',
-        bgColor: colors.alertWildfire,
-        borderColor: 'rgba(239, 68, 68, 0.25)',
-        severity: 'Extrema',
-        distance: 'Aprox. 5 km',
-        description: 'Sensores térmicos detectaram anomalias de calor extremo na vegetação vizinha. Risco iminente de alastramento para a sua propriedade.',
-      });
-    }
-  });
-  
-  return alerts;
+// Default location if user has no registered farms (Brasília, DF)
+const DEFAULT_COORDS = { latitude: -15.793889, longitude: -47.882778, nome: 'Brasília (Referência)' };
+
+// Haversine formula to calculate distance in km
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) return 99999;
+  const R = 6371; // Earth's radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return parseFloat((R * c).toFixed(1));
 };
 
 export default function AlertsScreen() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [alerts, setAlerts] = useState<AppAlert[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [lavouras, setLavouras] = useState<Lavoura[]>([]);
+  const [dbAlerts, setDbAlerts] = useState<AppAlert[]>([]);
+  const [eonetEvents, setEonetEvents] = useState<any[]>([]);
+  const [expandedAlertId, setExpandedAlertId] = useState<string | null>(null);
+  const [filterType, setFilterType] = useState<'all' | 'critical' | 'global'>('all');
+  const [selectedRadius, setSelectedRadius] = useState<number>(1500);
 
-  const fetchAlerts = async () => {
+  const handleAnalyzeLavouras = async () => {
+    if (lavouras.length === 0) {
+      alert('Nenhuma lavoura cadastrada. Cadastre uma lavoura primeiro!');
+      return;
+    }
+    
+    setAnalyzing(true);
     try {
-      setLoading(true);
-      const data = await lavouraService.listar();
-      setAlerts(generateAlertsForLavouras(data));
+      const promises = lavouras.map(l => {
+        if (l.id) {
+          return climateService.getAnalysis(l.id);
+        }
+        return Promise.resolve();
+      });
+      await Promise.all(promises);
+      await fetchLavourasAndEvents();
+      alert('Análise de satélite concluída! Alertas gerados com sucesso.');
+    } catch (err) {
+      console.error('Falha ao rodar análise de satélite', err);
+      alert('Erro ao executar análise. Verifique se o backend está online.');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const fetchLavourasAndEvents = async () => {
+    try {
+      const lavourasData = await lavouraService.listar();
+      setLavouras(lavourasData);
+
+      // Fetch NASA EONET data
+      const response = await fetch(
+        'https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=100'
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setEonetEvents(data.events || []);
+      }
+
+      // Fetch crop-specific alerts from local database
+      try {
+        const dbAlertsRaw = await alertaService.listar();
+
+        const extractSoilMoisture = (msg: string) => {
+          const match = msg.match(/(\d+(\.\d+)?)%/);
+          return match ? parseFloat(match[1]) : undefined;
+        };
+
+        const extractNdvi = (msg: string) => {
+          const match = msg.match(/NDVI:\s*(\d+(\.\d+)?)/i);
+          return match ? parseFloat(match[1]) : undefined;
+        };
+
+        const extractLavouraNome = (msg: string, def: string) => {
+          const match = msg.match(/lavoura:\s*([^.]+)/i);
+          return match ? match[1].trim() : def;
+        };
+
+        const parsedDbAlerts = dbAlertsRaw.map((a): AppAlert => {
+          const lavName = extractLavouraNome(a.mensagem, 'Sua Lavoura');
+          const associatedLav = lavourasData.find(l => l.nome.toLowerCase() === lavName.toLowerCase()) || lavourasData[0];
+          
+          const lavCoords = associatedLav 
+            ? { latitude: associatedLav.latitude, longitude: associatedLav.longitude }
+            : { latitude: DEFAULT_COORDS.latitude, longitude: DEFAULT_COORDS.longitude };
+
+          let catLabel = 'Alerta da Lavoura';
+          let icon = 'leaf-outline';
+          let bgColor = 'rgba(16, 185, 129, 0.08)';
+          let borderColor = 'rgba(16, 185, 129, 0.2)';
+          let severity: AppAlert['severity'] = 'Média';
+          let severityColor = colors.colorWarning;
+
+          if (a.tipo === 'SECA_GRAVE') {
+            catLabel = 'Seca Grave / Solo Seco';
+            icon = 'water-outline';
+            bgColor = colors.alertDrought;
+            borderColor = 'rgba(245, 158, 11, 0.3)';
+            severity = 'Crítica';
+            severityColor = colors.colorDanger;
+          } else if (a.tipo === 'ESTRESSE_VEGETATIVO') {
+            catLabel = 'Estresse Vegetativo (NDVI)';
+            icon = 'leaf-outline';
+            bgColor = 'rgba(16, 185, 129, 0.08)';
+            borderColor = 'rgba(16, 185, 129, 0.3)';
+            severity = 'Alta';
+            severityColor = colors.colorWarning;
+          } else if (a.tipo === 'ALERTA_CLIMA') {
+            catLabel = 'Anomalia Climática';
+            icon = 'cloudy-outline';
+            bgColor = colors.alertStorm;
+            borderColor = 'rgba(139, 92, 246, 0.3)';
+            severity = 'Média';
+            severityColor = colors.colorInfo;
+          }
+
+          return {
+            id: `db-${a.id}`,
+            title: a.mensagem.split('.')[0] + '.',
+            category: a.tipo,
+            categoryLabel: catLabel,
+            date: a.dataEmissao,
+            icon,
+            bgColor,
+            borderColor,
+            severity,
+            severityColor,
+            distance: 'Localizado',
+            distanceKm: 0,
+            description: a.mensagem,
+            lavouraNome: associatedLav ? associatedLav.nome : lavName,
+            eventCoords: lavCoords,
+            lavouraCoords: lavCoords,
+            soilMoisture: extractSoilMoisture(a.mensagem),
+            ndvi: extractNdvi(a.mensagem),
+          };
+        });
+
+        setDbAlerts(parsedDbAlerts);
+      } catch (err) {
+        console.error('Falha ao obter alertas do banco', err);
+      }
     } catch (error) {
-      console.error("Erro ao carregar lavouras para alertas", error);
+      console.error('Erro ao carregar dados para alertas', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchLavourasAndEvents();
   };
 
   useFocusEffect(
     useCallback(() => {
       if (!user) return;
-      fetchAlerts();
+      setLoading(true);
+      fetchLavourasAndEvents();
     }, [user])
   );
+
+  const toggleExpandAlert = (id: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedAlertId(expandedAlertId === id ? null : id);
+  };
+
+  const openGoogleMaps = (lat: number, lon: number, label: string) => {
+    const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+    Linking.canOpenURL(url).then((supported) => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        alert('Não foi possível abrir o link do mapa');
+      }
+    });
+  };
+
+  const openNasaSource = (url?: string) => {
+    if (!url) return;
+    Linking.canOpenURL(url).then((supported) => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        alert('Não foi possível abrir o link da NASA');
+      }
+    });
+  };
+
+  // Process and compute alerts
+  const processedAlerts = useMemo(() => {
+    let alertsList: AppAlert[] = [...dbAlerts];
+
+    // Process real NASA EONET events
+    eonetEvents.forEach((event: any) => {
+      if (!event.geometry || event.geometry.length === 0) return;
+      const latestGeom = event.geometry[event.geometry.length - 1];
+      if (latestGeom.type !== 'Point' || !Array.isArray(latestGeom.coordinates)) return;
+
+      const [lon, lat] = latestGeom.coordinates;
+      const eventDate = latestGeom.date;
+
+      // Match event with all user farms to find the closest one
+      let closestLavouraName = '';
+      let minDistance = Infinity;
+      let targetLavouraCoords = { latitude: 0, longitude: 0 };
+
+      if (lavouras.length > 0) {
+        lavouras.forEach((l) => {
+          const dist = calculateDistance(l.latitude, l.longitude, lat, lon);
+          if (dist < minDistance) {
+            minDistance = dist;
+            closestLavouraName = l.nome;
+            targetLavouraCoords = { latitude: l.latitude, longitude: l.longitude };
+          }
+        });
+      } else {
+        // Fallback reference location
+        minDistance = calculateDistance(DEFAULT_COORDS.latitude, DEFAULT_COORDS.longitude, lat, lon);
+        closestLavouraName = DEFAULT_COORDS.nome;
+        targetLavouraCoords = { latitude: DEFAULT_COORDS.latitude, longitude: DEFAULT_COORDS.longitude };
+      }
+
+      // Map categories to labels, colors and icons
+      const catId = event.categories?.[0]?.id || '';
+      let catLabel = 'Evento Climático';
+      let icon: any = 'warning-outline';
+      let bgColor = 'rgba(255, 255, 255, 0.05)';
+      let borderColor = colors.borderSubtle;
+
+      switch (catId) {
+        case 'wildfires':
+          catLabel = 'Foco de Incêndio';
+          icon = 'flame-outline';
+          bgColor = colors.alertWildfire;
+          borderColor = 'rgba(239, 68, 68, 0.25)';
+          break;
+        case 'severeStorms':
+          catLabel = 'Tempestades';
+          icon = 'thunderstorm-outline';
+          bgColor = colors.alertStorm;
+          borderColor = 'rgba(139, 92, 246, 0.25)';
+          break;
+        case 'volcanoes':
+          catLabel = 'Vulcão / Sismicidade';
+          icon = 'pulse-outline';
+          bgColor = colors.alertDrought;
+          borderColor = 'rgba(245, 158, 11, 0.25)';
+          break;
+        case 'floods':
+          catLabel = 'Inundação';
+          icon = 'water-outline';
+          bgColor = colors.alertFlood;
+          borderColor = 'rgba(59, 130, 246, 0.25)';
+          break;
+      }
+
+      // Determine severity based on distance
+      let severity: AppAlert['severity'] = 'Global / Monitoramento';
+      let severityColor = colors.colorInfo;
+
+      if (minDistance < 500) {
+        severity = 'Extrema';
+        severityColor = colors.colorDanger;
+      } else if (minDistance < 1500) {
+        severity = 'Crítica';
+        severityColor = colors.colorDanger;
+      } else if (minDistance < 3000) {
+        severity = 'Alta';
+        severityColor = colors.colorWarning;
+      } else if (minDistance < 5000) {
+        severity = 'Média';
+        severityColor = colors.colorWarning;
+      }
+
+      alertsList.push({
+        id: `nasa-${event.id}`,
+        title: event.title,
+        category: catId,
+        categoryLabel: catLabel,
+        date: eventDate,
+        icon,
+        bgColor,
+        borderColor,
+        severity,
+        severityColor,
+        distance: `${minDistance.toLocaleString('pt-BR')} km`,
+        distanceKm: minDistance,
+        description: event.description || `Evento detectado pelos sensores orbitais da NASA. Evento classificado como ${catLabel.toLowerCase()} em andamento.`,
+        lavouraNome: closestLavouraName,
+        eventCoords: { latitude: lat, longitude: lon },
+        lavouraCoords: targetLavouraCoords,
+        nasaUrl: event.sources?.[0]?.url || event.link,
+      });
+    });
+
+    // Sort by distance (closest first)
+    return alertsList.sort((a, b) => a.distanceKm - b.distanceKm);
+  }, [eonetEvents, lavouras, dbAlerts]);
+
+  // Apply radius proximity filter based on user's selected radius
+  const regionalAlerts = useMemo(() => {
+    return processedAlerts.filter((alert) => {
+      if (alert.distanceKm === 0) return true; // Keep local alerts regardless of radius
+      return alert.distanceKm <= selectedRadius;
+    });
+  }, [processedAlerts, selectedRadius]);
+
+  // Apply severity and category filters
+  const filteredAlerts = useMemo(() => {
+    if (filterType === 'critical') {
+      return regionalAlerts.filter(
+        (a) => a.severity === 'Extrema' || a.severity === 'Crítica' || a.severity === 'Alta'
+      );
+    }
+    if (filterType === 'global') {
+      return regionalAlerts.filter(
+        (a) => a.severity === 'Global / Monitoramento' || a.severity === 'Média'
+      );
+    }
+    return regionalAlerts;
+  }, [regionalAlerts, filterType]);
+
+  const criticalCount = useMemo(() => {
+    return regionalAlerts.filter(
+      (a) => a.severity === 'Extrema' || a.severity === 'Crítica' || a.severity === 'Alta'
+    ).length;
+  }, [regionalAlerts]);
+
+  const relevantCount = useMemo(() => {
+    return processedAlerts.filter((a) => a.distanceKm <= 3000).length;
+  }, [processedAlerts]);
 
   if (loading) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={colors.accentPrimary} />
-        <Text style={{ color: colors.textMuted, marginTop: 12 }}>Buscando dados da NASA EONET...</Text>
+        <Text style={{ color: colors.textMuted, marginTop: 12 }}>
+          Analisando lavouras e buscando alertas em tempo real...
+        </Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.headerCard}>
-        <Text style={styles.headerEmoji}>⚠️</Text>
-        <Text style={styles.headerTitle}>Alertas Inteligentes</Text>
-        <Text style={styles.headerSubtitle}>
-          Monitoramento exclusivo para as suas lavouras ativas
-        </Text>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{alerts.length} alertas próximos a você</Text>
-        </View>
-      </View>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.accentPrimary}
+          colors={[colors.accentPrimary]}
+        />
+      }
+    >
+      <AlertHeader
+        eventsCount={eonetEvents.length}
+        relevantCount={relevantCount}
+      />
 
-      {alerts.length === 0 ? (
+      <TouchableOpacity
+        style={styles.analyzeButton}
+        onPress={handleAnalyzeLavouras}
+        disabled={analyzing}
+      >
+        {analyzing ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Ionicons name="sync-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
+        )}
+        <Text style={styles.analyzeButtonText}>
+          {analyzing ? 'Analisando Saúde das Lavouras...' : 'Analisar Saúde das Lavouras'}
+        </Text>
+      </TouchableOpacity>
+
+      <AlertFilterControl
+        filterType={filterType}
+        onFilterTypeChange={setFilterType}
+        totalCount={regionalAlerts.length}
+        criticalCount={criticalCount}
+        selectedRadius={selectedRadius}
+        onRadiusChange={(radiusVal) => {
+          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          setSelectedRadius(radiusVal);
+        }}
+      />
+
+      {/* Alerts List */}
+      {filteredAlerts.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={{ fontSize: 40, marginBottom: 12 }}>✨</Text>
-          <Text style={styles.emptyTitle}>Tudo tranquilo por aqui</Text>
-          <Text style={styles.emptyText}>Não detectamos nenhuma anomalia climática ou desastre natural nas proximidades das suas lavouras.</Text>
+          <Ionicons name="sparkles-outline" size={48} color={colors.accentPrimary} />
+          <Text style={styles.emptyTitle}>Tudo tranquilo no radar</Text>
+          <Text style={styles.emptyText}>
+            {selectedRadius === Infinity 
+              ? 'Não detectamos nenhum evento climático ativo.'
+              : `Não detectamos nenhum evento climático ativo em um raio de ${selectedRadius.toLocaleString('pt-BR')} km de suas lavouras.`}
+          </Text>
+          {selectedRadius !== Infinity && (
+            <TouchableOpacity
+              style={styles.clearFilterBtn}
+              onPress={() => setSelectedRadius(Infinity)}
+            >
+              <Text style={styles.clearFilterText}>Expandir Raio (Sem Limite)</Text>
+            </TouchableOpacity>
+          )}
         </View>
       ) : (
-        alerts.map((alert) => (
-          <View
+        filteredAlerts.map((alert) => (
+          <AlertCard
             key={alert.id}
-            style={[styles.alertItem, { backgroundColor: alert.bgColor, borderColor: alert.borderColor }]}
-          >
-            <Text style={styles.alertIcon}>{alert.icon}</Text>
-            <View style={styles.alertContent}>
-              <Text style={styles.alertTitle}>{alert.title}</Text>
-              
-              <View style={styles.alertMeta}>
-                <View style={styles.severityBadge}>
-                  <Text style={styles.severityText}>{alert.severity}</Text>
-                </View>
-                <Text style={styles.alertCategory}>{alert.category}</Text>
-                <Text style={styles.alertDistance}>📍 {alert.distance}</Text>
-              </View>
-
-              <Text style={styles.alertDescription}>{alert.description}</Text>
-
-              <Text style={styles.alertDate}>
-                Detectado em: {new Date(alert.date).toLocaleDateString('pt-BR')}
-              </Text>
-            </View>
-          </View>
+            alert={alert}
+            isExpanded={expandedAlertId === alert.id}
+            onToggleExpand={() => toggleExpandAlert(alert.id)}
+            onOpenMaps={openGoogleMaps}
+            onOpenNasa={openNasaSource}
+          />
         ))
       )}
     </ScrollView>
@@ -159,123 +466,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgPrimary,
   },
   content: {
-    padding: spacing.xl,
+    padding: spacing.lg,
     paddingBottom: spacing.xxxl,
-  },
-  headerCard: {
-    alignItems: 'center',
-    backgroundColor: colors.bgCard,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.borderPrimary,
-    padding: spacing.xxl,
-    marginBottom: spacing.xl,
-  },
-  headerEmoji: {
-    fontSize: 40,
-    marginBottom: spacing.sm,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  badge: {
-    marginTop: spacing.md,
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    paddingHorizontal: 14,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.colorDanger,
-  },
-  alertItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: spacing.lg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    marginBottom: spacing.md,
-    gap: spacing.md,
-  },
-  alertIcon: {
-    fontSize: 24,
-  },
-  alertContent: {
-    flex: 1,
-  },
-  alertTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    lineHeight: 20,
-  },
-  alertMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: 6,
-  },
-  severityBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  severityText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    textTransform: 'uppercase',
-  },
-  alertCategory: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  alertDistance: {
-    fontSize: 11,
-    color: colors.textPrimary,
-    fontWeight: '600',
-  },
-  alertDescription: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: spacing.sm,
-    lineHeight: 18,
-  },
-  alertDate: {
-    fontSize: 11,
-    color: colors.textDim,
-    marginTop: spacing.md,
-  },
-  infoBox: {
-    backgroundColor: 'rgba(59, 130, 246, 0.08)',
-    borderRadius: radius.md,
-    padding: spacing.lg,
-    marginTop: spacing.sm,
-  },
-  infoText: {
-    fontSize: 12,
-    color: colors.textMuted,
-    lineHeight: 18,
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.xxl,
+    padding: spacing.xxxl,
     marginTop: spacing.xl,
     backgroundColor: colors.bgCard,
     borderRadius: radius.lg,
@@ -286,12 +483,45 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: colors.textPrimary,
+    marginTop: spacing.md,
     marginBottom: spacing.xs,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textMuted,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 18,
+  },
+  clearFilterBtn: {
+    marginTop: spacing.lg,
+    backgroundColor: colors.accentSecondary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: radius.md,
+  },
+  clearFilterText: {
+    color: colors.textPrimary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  analyzeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accentPrimary,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: radius.md,
+    marginBottom: spacing.lg,
+    shadowColor: colors.accentPrimary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  analyzeButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
