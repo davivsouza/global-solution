@@ -86,12 +86,16 @@ export default function AlertsScreen() {
       setLavouras(lavourasData);
 
       // Fetch NASA EONET data
-      const response = await fetch(
-        'https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=100'
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setEonetEvents(data.events || []);
+      try {
+        const response = await fetch(
+          'https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=100'
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setEonetEvents(data.events || []);
+        }
+      } catch (eonetErr) {
+        console.warn('Falha ao obter dados da NASA EONET:', eonetErr);
       }
 
       // Fetch crop-specific alerts from local database
@@ -99,12 +103,14 @@ export default function AlertsScreen() {
         const dbAlertsRaw = await alertaService.listar();
 
         const extractSoilMoisture = (msg: string) => {
-          const match = msg.match(/(\d+(\.\d+)?)%/);
+          const normalized = msg.replace(/,/g, '.');
+          const match = normalized.match(/(\d+(\.\d+)?)%/);
           return match ? parseFloat(match[1]) : undefined;
         };
 
         const extractNdvi = (msg: string) => {
-          const match = msg.match(/NDVI:\s*(\d+(\.\d+)?)/i);
+          const normalized = msg.replace(/,/g, '.');
+          const match = normalized.match(/NDVI:\s*(\d+(\.\d+)?)/i);
           return match ? parseFloat(match[1]) : undefined;
         };
 
