@@ -23,17 +23,28 @@ export default function AboutScreen() {
         <View style={styles.logoSection}>
           <AppLogo size={80} />
           <Text style={styles.appName}>AgroSat</Text>
-          <Text style={styles.tagline}>Monitoramento Agrícola com Satélite e IA</Text>
+          <Text style={styles.tagline}>Monitoramento agrícola com clima, satélite e IA</Text>
           <Text style={styles.version}>v1.0.0</Text>
         </View>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Sobre</Text>
           <Text style={styles.cardText}>
-            O AgroSat é uma solução digital inovadora voltada para agricultores, cooperativas e
-            profissionais do agronegócio. Combina dados agroclimatológicos em tempo real obtidos de
-            satélites com inteligência artificial generativa para oferecer análises
-            preditivas, monitoramento de saúde vegetal e alertas das lavouras.
+            O AgroSat conecta o agricultor a uma API de análise agrícola baseada em lavouras
+            georreferenciadas. O app permite cadastrar áreas produtivas, acompanhar clima,
+            umidade do solo, vigor vegetativo por NDVI e receber recomendações com IA para
+            apoiar decisões de manejo.
+          </Text>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Arquitetura</Text>
+          <Text style={styles.cardText}>
+            O aplicativo React Native consome uma API Spring Boot autenticada por JWT. No backend,
+            os dados climáticos vêm da NASA POWER, as métricas de solo e NDVI vêm da
+            AgroMonitoring, e os polígonos das lavouras são reaproveitados quando já existem na
+            conta antes da criação de novos polígonos. Alertas críticos são processados via
+            RabbitMQ e ficam disponíveis no painel do app.
           </Text>
         </View>
 
@@ -42,9 +53,11 @@ export default function AboutScreen() {
           <View style={styles.techRow}>
             <TechBadge emoji="📱" label="React Native / Expo" />
             <TechBadge emoji="☕" label="Spring Boot" />
-            <TechBadge emoji="🛰️" label="Dados Climáticos" />
+            <TechBadge emoji="🛰️" label="NASA POWER" />
+            <TechBadge emoji="🌿" label="AgroMonitoring" />
             <TechBadge emoji="🤖" label="Google Gemini AI" />
-            <TechBadge emoji="🗄️" label="H2 Database" />
+            <TechBadge emoji="🐘" label="PostgreSQL" />
+            <TechBadge emoji="📨" label="RabbitMQ" />
           </View>
         </View>
 
@@ -61,7 +74,7 @@ export default function AboutScreen() {
           <InfoRow label="Versão" value="1.0.0" />
           <InfoRow label="Commit Hash" value={commitHash} />
           <InfoRow label="Plataforma" value="Expo SDK 56" />
-          <InfoRow label="Backend" value="Spring Boot 3.5" />
+          <InfoRow label="Backend" value="Spring Boot 3.4.2" />
         </View>
 
         <View style={styles.card}>
