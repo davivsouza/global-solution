@@ -3,11 +3,13 @@ import api from './api';
 export interface ClimateAnalysis {
   lavoura: string;
   analysis: string;
-  climateData: any; // NASA API Response
+  climateData: any;
+  soilData?: any;
+  ndviData?: any;
 }
 
-export interface AiRecommendation {
-  recomendacao: string;
+export interface ChatResponse {
+  resposta: string;
 }
 
 export const climateService = {
@@ -16,10 +18,12 @@ export const climateService = {
     return response.data;
   },
 
-  async getRecommendation(lavouraId: number, dadosClimaticos: string): Promise<AiRecommendation> {
-    const response = await api.get<AiRecommendation>(`/ai/recommend/${lavouraId}`, {
-      params: { dadosClimaticos }
+  async sendChatMessage(message: string, lavouraId?: number, dadosClimaticos?: string): Promise<ChatResponse> {
+    const response = await api.post<ChatResponse>('/ai/chat', {
+      mensagem: message,
+      lavouraId,
+      dadosClimaticos,
     });
     return response.data;
-  }
+  },
 };

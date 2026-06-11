@@ -5,23 +5,22 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { StatCard } from '../../src/components/StatCard';
 import { AppLogo } from '../../src/components/AppLogo';
+import { ClimateTrendChart } from '../../src/components/ClimateTrendChart';
 import { colors, spacing, radius } from '../../src/theme/colors';
 import { lavouraService } from '../../src/services/lavouraService';
 import { climateService, ClimateAnalysis } from '../../src/services/climateService';
 import { Lavoura } from '../../src/types';
+import { getAverage, getClimatePoints, getTotal } from '../../src/utils/climate';
 
 export default function DashboardScreen() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [lavouras, setLavouras] = useState<Lavoura[]>([]);
   const [climate, setClimate] = useState<ClimateAnalysis | null>(null);
-  const [aiTip, setAiTip] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const [selectedLavouraId, setSelectedLavouraId] = useState<number | null>(null);
-
-  const [loadingAi, setLoadingAi] = useState(false);
 
   const fetchData = async (isRefresh = false, lavouraIdToFetch?: number) => {
     try {
@@ -39,32 +38,16 @@ export default function DashboardScreen() {
         
         if (activeLavoura.id !== selectedLavouraId) {
           setSelectedLavouraId(activeLavoura.id || null);
-          setAiTip(null); // Clear tip when switching lavoura
         }
 
-        const nasaData = await climateService.getAnalysis(activeLavoura.id!);
-        setClimate(nasaData);
+        const climateData = await climateService.getAnalysis(activeLavoura.id!);
+        setClimate(climateData);
       }
     } catch (error) {
       console.error("Erro ao buscar dados do dashboard:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
-    }
-  };
-
-  const generateAiTip = async () => {
-    if (!climate || !selectedLavouraId) return;
-    try {
-      setLoadingAi(true);
-      const climateStr = JSON.stringify(climate.climateData);
-      const aiData = await climateService.getRecommendation(selectedLavouraId, climateStr);
-      setAiTip(aiData.recomendacao);
-    } catch (error) {
-      console.error("Erro ao gerar dica da IA:", error);
-      setAiTip("Não foi possível gerar a recomendação no momento.");
-    } finally {
-      setLoadingAi(false);
     }
   };
 
@@ -81,27 +64,13 @@ export default function DashboardScreen() {
   };
 
   const getTemperature = () => {
-    if (climate?.climateData?.properties?.parameter?.T2M) {
-      const t2m = climate.climateData.properties.parameter.T2M;
-      const values = Object.values(t2m) as number[];
-      if (values.length > 0) {
-        const avg = values.reduce((a, b) => a + b, 0) / values.length;
-        return `${avg.toFixed(1)}°C`;
-      }
-    }
-    return "N/A";
+    const values = climatePoints.map((point) => point.temperature);
+    return values.length > 0 ? `${getAverage(values).toFixed(1)}°C` : 'N/A';
   };
 
   const getRainfall = () => {
-    if (climate?.climateData?.properties?.parameter?.PRECTOTCORR) {
-      const prec = climate.climateData.properties.parameter.PRECTOTCORR;
-      const values = Object.values(prec) as number[];
-      if (values.length > 0) {
-        const total = values.reduce((a, b) => a + b, 0).toFixed(1);
-        return `${total} mm`;
-      }
-    }
-    return "N/A";
+    const values = climatePoints.map((point) => point.precipitation);
+    return values.length > 0 ? `${getTotal(values).toFixed(1)} mm` : 'N/A';
   };
 
   if (loading) {
@@ -132,6 +101,7 @@ export default function DashboardScreen() {
   }
 
   const lavouraAtual = lavouras.find(l => l.id === selectedLavouraId) || lavouras[0];
+  const climatePoints = getClimatePoints(climate?.climateData);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -182,14 +152,14 @@ export default function DashboardScreen() {
         <View style={styles.statsGrid}>
           <StatCard
             icon="🌡️"
-            label="Temperatura (NASA)"
+            label="Temperatura"
             value={getTemperature()}
             detail="Média recente"
             accentColor={colors.colorTemp}
           />
           <StatCard
             icon="🌧️"
-            label="Precipitação (NASA)"
+            label="Precipitação"
             value={getRainfall()}
             detail="Acumulado do período"
             accentColor={colors.colorRain}
@@ -203,28 +173,7 @@ export default function DashboardScreen() {
           />
         </View>
 
-        {/* Info Card */}
-        <View style={styles.infoCard}>
-          <Text style={styles.infoIcon}>💡</Text>
-          <View style={styles.infoContent}>
-            <Text style={styles.infoTitle}>Dica da IA AgroSat</Text>
-            {aiTip ? (
-              <Text style={styles.infoText}>{aiTip}</Text>
-            ) : (
-              <TouchableOpacity 
-                style={styles.generateAiButton} 
-                onPress={generateAiTip}
-                disabled={loadingAi}
-              >
-                {loadingAi ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.generateAiButtonText}>Gerar Recomendação da IA ✨</Text>
-                )}
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
+        <ClimateTrendChart points={climatePoints} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -363,46 +312,5 @@ const styles = StyleSheet.create({
   },
   statsGrid: {
     gap: spacing.md,
-  },
-  infoCard: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(16, 185, 129, 0.08)',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.2)',
-    padding: spacing.lg,
-    marginTop: spacing.xxl,
-    gap: spacing.md,
-  },
-  infoIcon: {
-    fontSize: 24,
-    marginRight: spacing.lg,
-  },
-  infoContent: {
-    flex: 1,
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
-  },
-  infoText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
-  generateAiButton: {
-    backgroundColor: colors.accentPrimary,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    alignSelf: 'flex-start',
-    marginTop: spacing.sm,
-  },
-  generateAiButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: 'bold',
   },
 });

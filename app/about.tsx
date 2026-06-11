@@ -32,7 +32,7 @@ export default function AboutScreen() {
           <Text style={styles.cardText}>
             O AgroSat é uma solução digital inovadora voltada para agricultores, cooperativas e
             profissionais do agronegócio. Combina dados agroclimatológicos em tempo real obtidos de
-            satélites da NASA com inteligência artificial generativa para oferecer análises
+            satélites com inteligência artificial generativa para oferecer análises
             preditivas, monitoramento de saúde vegetal e alertas das lavouras.
           </Text>
         </View>
@@ -42,7 +42,7 @@ export default function AboutScreen() {
           <View style={styles.techRow}>
             <TechBadge emoji="📱" label="React Native / Expo" />
             <TechBadge emoji="☕" label="Spring Boot" />
-            <TechBadge emoji="🛰️" label="NASA POWER API" />
+            <TechBadge emoji="🛰️" label="Dados Climáticos" />
             <TechBadge emoji="🤖" label="Google Gemini AI" />
             <TechBadge emoji="🗄️" label="H2 Database" />
           </View>

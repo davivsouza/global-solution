@@ -10,8 +10,8 @@ interface AlertHeaderProps {
 export function AlertHeader({ eventsCount, relevantCount }: AlertHeaderProps) {
   return (
     <View style={styles.headerCard}>
-      <View style={styles.nasaBadge}>
-        <Text style={styles.nasaBadgeText}>Alertas das Lavouras</Text>
+      <View style={styles.headerBadge}>
+        <Text style={styles.headerBadgeText}>Alertas das Lavouras</Text>
       </View>
       <Text style={styles.headerSubtitle}>
         Monitoramento dos alertas agroclimáticos gerados a partir das suas lavouras cadastradas.
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  nasaBadge: {
+  headerBadge: {
     backgroundColor: 'rgba(16, 185, 129, 0.1)',
     paddingHorizontal: 12,
     paddingVertical: 4,
@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(16, 185, 129, 0.25)',
     marginBottom: spacing.md,
   },
-  nasaBadgeText: {
+  headerBadgeText: {
     color: colors.textSecondary,
     fontSize: 11,
     fontWeight: '700',
