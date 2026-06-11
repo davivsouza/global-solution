@@ -23,6 +23,8 @@ export const climateService = {
       mensagem: message,
       lavouraId,
       dadosClimaticos,
+    }, {
+      timeout: 90000,
     });
     return response.data;
   },

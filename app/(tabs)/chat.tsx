@@ -20,6 +20,7 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { lavouraService } from '../../src/services/lavouraService';
 import { climateService, ClimateAnalysis } from '../../src/services/climateService';
 import { Lavoura } from '../../src/types';
+import { getAverage, getClimatePoints, getTotal } from '../../src/utils/climate';
 
 interface ChatMessage {
   id: string;
@@ -33,6 +34,24 @@ const suggestions = [
   'Quando devo irrigar?',
   'O que significa NDVI baixo?',
 ];
+
+function buildClimateContext(climate: ClimateAnalysis | null) {
+  if (!climate) return undefined;
+
+  const points = getClimatePoints(climate.climateData);
+  const temperatures = points.map((point) => point.temperature);
+  const precipitation = points.map((point) => point.precipitation);
+  const ndvi = climate.ndviData?.ndvi;
+  const moisture = climate.soilData?.moisture;
+
+  return JSON.stringify({
+    periodo: points.map((point) => point.label).join(', '),
+    temperaturaMedia: temperatures.length > 0 ? Number(getAverage(temperatures).toFixed(1)) : null,
+    precipitacaoTotal: precipitation.length > 0 ? Number(getTotal(precipitation).toFixed(1)) : null,
+    ndvi: typeof ndvi === 'number' ? Number(ndvi.toFixed(2)) : ndvi,
+    umidadeSoloPercentual: typeof moisture === 'number' ? Number((moisture * 100).toFixed(1)) : null,
+  });
+}
 
 export default function ChatScreen() {
   const { user } = useAuth();
@@ -95,11 +114,7 @@ export default function ChatScreen() {
     setSending(true);
 
     try {
-      const context = climate ? JSON.stringify({
-        climateData: climate.climateData,
-        soilData: climate.soilData,
-        ndviData: climate.ndviData,
-      }) : undefined;
+      const context = buildClimateContext(climate);
 
       const response = await climateService.sendChatMessage(message, selectedLavouraId, context);
       setMessages((current) => [
@@ -110,14 +125,18 @@ export default function ChatScreen() {
           text: response.resposta,
         },
       ]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao enviar mensagem para IA:', error);
+      const errorText = error.code === 'ECONNABORTED'
+        ? 'A AgroSat AI demorou mais que o esperado para responder. Tente uma pergunta mais direta ou envie novamente em alguns instantes.'
+        : 'Não consegui responder agora. Verifique a conexão com a API e tente novamente.';
+
       setMessages((current) => [
         ...current,
         {
           id: `assistant-error-${Date.now()}`,
           role: 'assistant',
-          text: 'Não consegui responder agora. Verifique a conexão com a API e tente novamente.',
+          text: errorText,
         },
       ]);
     } finally {
