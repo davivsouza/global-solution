@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   LayoutAnimation,
   RefreshControl,
-  Linking,
   TouchableOpacity,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
@@ -174,16 +173,7 @@ export default function AlertsScreen() {
     setExpandedAlertId(expandedAlertId === id ? null : id);
   };
 
-  const openGoogleMaps = (lat: number, lon: number, label: string) => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
-    Linking.canOpenURL(url).then((supported) => {
-      if (supported) {
-        Linking.openURL(url);
-      } else {
-        alert('Não foi possível abrir o link do mapa');
-      }
-    });
-  };
+
 
   const processedAlerts = useMemo(() => {
     return [...dbAlerts].sort(
@@ -246,7 +236,6 @@ export default function AlertsScreen() {
             alert={alert}
             isExpanded={expandedAlertId === alert.id}
             onToggleExpand={() => toggleExpandAlert(alert.id)}
-            onOpenMaps={openGoogleMaps}
           />
         ))
       )}

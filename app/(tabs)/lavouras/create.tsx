@@ -66,7 +66,7 @@ export default function CreateLavouraScreen() {
         status: 'ATIVA',
       });
       Alert.alert('Sucesso', 'Lavoura cadastrada com sucesso!', [
-        { text: 'OK', onPress: () => router.replace('/(tabs)') },
+        { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (error: any) {
       const message = error.response?.data?.error || 'Erro ao cadastrar lavoura.';

@@ -8,14 +8,12 @@ interface AlertCardProps {
   alert: AppAlert;
   isExpanded: boolean;
   onToggleExpand: () => void;
-  onOpenMaps: (lat: number, lon: number, label: string) => void;
 }
 
 export function AlertCard({
   alert,
   isExpanded,
   onToggleExpand,
-  onOpenMaps,
 }: AlertCardProps) {
   const isLocalCropAlert = alert.distanceKm === 0;
   const [tipVisible, setTipVisible] = useState(false);
@@ -172,16 +170,7 @@ export function AlertCard({
             </View>
           </View>
 
-          {/* Actions Row */}
-          <View style={styles.actionsRow}>
-            <TouchableOpacity
-              style={[styles.actionButton, { backgroundColor: 'rgba(59, 130, 246, 0.15)', borderColor: 'rgba(59, 130, 246, 0.3)' }]}
-              onPress={() => onOpenMaps(alert.eventCoords.latitude, alert.eventCoords.longitude, alert.title)}
-            >
-              <Ionicons name="map-outline" size={16} color="#60a5fa" />
-              <Text style={[styles.actionBtnText, { color: '#60a5fa' }]}>Ver no Maps</Text>
-            </TouchableOpacity>
-          </View>
+
         </View>
       )}
 
@@ -417,25 +406,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontWeight: '600',
   },
-  actionsRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.md,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: radius.md,
-    borderWidth: 1,
-  },
-  actionBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
+
   modalBackdrop: {
     flex: 1,
     justifyContent: 'center',
