@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius } from '../theme/colors';
 import { AppAlert } from '../types';
@@ -9,7 +9,6 @@ interface AlertCardProps {
   isExpanded: boolean;
   onToggleExpand: () => void;
   onOpenMaps: (lat: number, lon: number, label: string) => void;
-  onOpenNasa: (url?: string) => void;
 }
 
 export function AlertCard({
@@ -17,9 +16,9 @@ export function AlertCard({
   isExpanded,
   onToggleExpand,
   onOpenMaps,
-  onOpenNasa,
 }: AlertCardProps) {
   const isLocalCropAlert = alert.distanceKm === 0;
+  const [tipVisible, setTipVisible] = useState(false);
 
   return (
     <View
@@ -73,6 +72,19 @@ export function AlertCard({
           {/* Metric Badges if available */}
           {(alert.ndvi !== undefined || alert.soilMoisture !== undefined) && (
             <View style={styles.metricsContainer}>
+              <View style={styles.metricsHeader}>
+                <Text style={styles.metricsTitle}>Indicadores da Lavoura</Text>
+                <TouchableOpacity
+                  style={styles.tipButton}
+                  onPress={() => setTipVisible(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Abrir dica sobre os indicadores da lavoura"
+                >
+                  <Ionicons name="help-circle-outline" size={15} color={colors.textSecondary} />
+                  <Text style={styles.tipButtonText}>Dica</Text>
+                </TouchableOpacity>
+              </View>
+
               {alert.ndvi !== undefined && (
                 <View style={styles.metricItem}>
                   <Text style={styles.metricLabel}>Saúde Foliar (NDVI)</Text>
@@ -169,19 +181,56 @@ export function AlertCard({
               <Ionicons name="map-outline" size={16} color="#60a5fa" />
               <Text style={[styles.actionBtnText, { color: '#60a5fa' }]}>Ver no Maps</Text>
             </TouchableOpacity>
-
-            {alert.nasaUrl && (
-              <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderColor: 'rgba(16, 185, 129, 0.3)' }]}
-                onPress={() => onOpenNasa(alert.nasaUrl)}
-              >
-                <Ionicons name="globe-outline" size={16} color={colors.textSecondary} />
-                <Text style={[styles.actionBtnText, { color: colors.textSecondary }]}>Fonte NASA</Text>
-              </TouchableOpacity>
-            )}
           </View>
         </View>
       )}
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={tipVisible}
+        onRequestClose={() => setTipVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.tipModal}>
+            <View style={styles.tipModalHeader}>
+              <View style={styles.tipIconBg}>
+                <Ionicons name="leaf-outline" size={20} color={colors.accentPrimary} />
+              </View>
+              <Text style={styles.tipModalTitle}>Como ler os indicadores</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setTipVisible(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Fechar dica"
+              >
+                <Ionicons name="close-outline" size={20} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.tipSection}>
+              <Text style={styles.tipSectionTitle}>NDVI</Text>
+              <Text style={styles.tipText}>
+                O NDVI é um índice de vigor da vegetação. Valores mais baixos indicam folhas com menos atividade fotossintética, possível estresse, praga, doença ou falta de água.
+              </Text>
+            </View>
+
+            <View style={styles.tipSection}>
+              <Text style={styles.tipSectionTitle}>Umidade do solo</Text>
+              <Text style={styles.tipText}>
+                Mostra quanta água está disponível na zona das raízes. Quando cai demais, a planta reduz crescimento, absorve menos nutrientes e pode perder produtividade.
+              </Text>
+            </View>
+
+            <View style={styles.tipSection}>
+              <Text style={styles.tipSectionTitle}>Impacto na decisão</Text>
+              <Text style={styles.tipText}>
+                Esses sinais ajudam a priorizar irrigação, vistoria em campo, adubação, controle de pragas e acompanhamento das áreas com maior risco.
+              </Text>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -273,6 +322,35 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     gap: spacing.md,
   },
+  metricsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  metricsTitle: {
+    color: colors.textSecondary,
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0,
+  },
+  tipButton: {
+    minHeight: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.25)',
+  },
+  tipButtonText: {
+    color: colors.textSecondary,
+    fontSize: 10,
+    fontWeight: '800',
+  },
   metricItem: {
     width: '100%',
   },
@@ -357,5 +435,63 @@ const styles = StyleSheet.create({
   actionBtnText: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: spacing.lg,
+    backgroundColor: 'rgba(0, 0, 0, 0.72)',
+  },
+  tipModal: {
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderPrimary,
+    padding: spacing.lg,
+  },
+  tipModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  tipIconBg: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tipModalTitle: {
+    flex: 1,
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+  },
+  tipSection: {
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  tipSectionTitle: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  tipText: {
+    color: colors.textMuted,
+    fontSize: 12,
+    lineHeight: 18,
   },
 });

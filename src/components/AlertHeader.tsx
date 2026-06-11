@@ -11,24 +11,23 @@ export function AlertHeader({ eventsCount, relevantCount }: AlertHeaderProps) {
   return (
     <View style={styles.headerCard}>
       <View style={styles.nasaBadge}>
-        <Text style={styles.nasaBadgeText}>📡 Satélites NASA EONET Ativos</Text>
+        <Text style={styles.nasaBadgeText}>Alertas das Lavouras</Text>
       </View>
-      <Text style={styles.headerTitle}>Monitoramento Espacial</Text>
       <Text style={styles.headerSubtitle}>
-        Análise georreferenciada de perigos climáticos e incêndios em tempo real de acordo com as coordenadas das suas lavouras.
+        Monitoramento dos alertas agroclimáticos gerados a partir das suas lavouras cadastradas.
       </Text>
 
       <View style={styles.statsRow}>
         <View style={styles.statBox}>
           <Text style={styles.statVal}>{eventsCount}</Text>
-          <Text style={styles.statLabel}>Eventos Globais</Text>
+          <Text style={styles.statLabel}>Alertas Ativos</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statBox}>
           <Text style={[styles.statVal, { color: colors.colorWarning }]}>
             {relevantCount}
           </Text>
-          <Text style={styles.statLabel}>Relevantes / Próximos</Text>
+          <Text style={styles.statLabel}>Críticos</Text>
         </View>
       </View>
     </View>

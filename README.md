@@ -21,11 +21,9 @@ Este projeto representa a entrega de **Mobile Application Development (MAD)** pa
 O App Mobile moderno e altamente interativo preenche 100% dos requisitos de entrega de MAD.
 
 - **Autenticação Segura:** Telas protegidas de Login/Cadastro manipulando **JWT (Bearer Tokens)** guardados sob criptografia local usando `expo-secure-store` e gerenciamento global com a **Context API**.
-- **Múltiplas Telas Funcionais (6+):** Fluxos dinâmicos construídos: Auth (Login/Cadastro), Lista de Lavouras, Dashboard Inteligente, Cadastro Espacial de Fazenda, Alertas NASA/AgroSat e Perfil/Sobre o App.
+- **Múltiplas Telas Funcionais (6+):** Fluxos dinâmicos construídos: Auth (Login/Cadastro), Lista de Lavouras, Dashboard Inteligente, Cadastro Espacial de Fazenda, Alertas AgroSat e Perfil/Sobre o App.
 - **Integração CRUD:** Comunicação fluida via `Axios` para criar, ler, atualizar e deletar lavouras junto ao Backend Spring Boot.
-- **Painel de Alertas de Satélite e AgroSat:** Tela unificada que integra:
-  * **Alertas Globais da NASA EONET:** Incêndios florestais, tempestades, inundações detectados por satélites da NASA, filtrados por distância em relação às suas fazendas (raio de 500km, 1500km, 3000km, etc.).
-  * **Alertas Locais de Lavouras (AgroMonitoring):** Apresenta dados reais de **Estresse Vegetativo (NDVI)** e barra de progresso com a porcentagem de **Umidade do Solo**, avisando quando as plantas entram em zona de perigo.
+- **Painel de Alertas AgroSat:** Tela focada nos alertas das lavouras cadastradas, apresentando dados reais de **Estresse Vegetativo (NDVI)** e barra de progresso com a porcentagem de **Umidade do Solo**, avisando quando as plantas entram em zona de perigo.
 - **Navegação com Expo Router:** Abordagem baseada no *File System*, combinando perfeitamente Stack Navigation (para sobreposição de fluxo de login) e Tabs Bottom Navigation (para a interface principal de navegação rápida).
 - **Design System Premium:** Adoção de uma UI *Dark-Agriculture-Green* focada em conversão. Uso intenso de micro-interações, estados de carregamento elegantes, *glassmorphism*, fontes personalizadas do Google (Inter/Outfit) e adaptação nativa ao *Dynamic Island* via `SafeAreaView`.
 

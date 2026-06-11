@@ -59,7 +59,6 @@ export interface AppAlert {
   lavouraNome: string;
   eventCoords: { latitude: number; longitude: number };
   lavouraCoords: { latitude: number; longitude: number };
-  nasaUrl?: string;
   soilMoisture?: number;
   ndvi?: number;
 }

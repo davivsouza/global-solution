@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, StyleSheet, Platform, TouchableOpacity } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import Constants from 'expo-constants';
+import { AppLogo } from '../src/components/AppLogo';
 import { colors, spacing, radius } from '../src/theme/colors';
 
 export default function AboutScreen() {
@@ -20,9 +21,7 @@ export default function AboutScreen() {
       />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.logoSection}>
-          <View style={styles.logoBox}>
-            <Text style={styles.logoEmoji}>🛰️</Text>
-          </View>
+          <AppLogo size={80} />
           <Text style={styles.appName}>AgroSat</Text>
           <Text style={styles.tagline}>Monitoramento Agrícola com Satélite e IA</Text>
           <Text style={styles.version}>v1.0.0</Text>
@@ -34,7 +33,7 @@ export default function AboutScreen() {
             O AgroSat é uma solução digital inovadora voltada para agricultores, cooperativas e
             profissionais do agronegócio. Combina dados agroclimatológicos em tempo real obtidos de
             satélites da NASA com inteligência artificial generativa para oferecer análises
-            preditivas, monitoramento de saúde vegetal e alertas de desastres naturais.
+            preditivas, monitoramento de saúde vegetal e alertas das lavouras.
           </Text>
         </View>
 
@@ -44,7 +43,6 @@ export default function AboutScreen() {
             <TechBadge emoji="📱" label="React Native / Expo" />
             <TechBadge emoji="☕" label="Spring Boot" />
             <TechBadge emoji="🛰️" label="NASA POWER API" />
-            <TechBadge emoji="🌍" label="NASA EONET API" />
             <TechBadge emoji="🤖" label="Google Gemini AI" />
             <TechBadge emoji="🗄️" label="H2 Database" />
           </View>
@@ -122,23 +120,7 @@ const styles = StyleSheet.create({
   logoSection: {
     alignItems: 'center',
     marginBottom: spacing.xxl,
-  },
-  logoBox: {
-    width: 80,
-    height: 80,
-    borderRadius: radius.xl,
-    backgroundColor: colors.accentPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-    shadowColor: colors.accentPrimary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  logoEmoji: {
-    fontSize: 40,
+    gap: spacing.md,
   },
   appName: {
     fontSize: 28,

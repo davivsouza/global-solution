@@ -12,6 +12,7 @@ import { Link } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { Input } from '../../src/components/Input';
 import { Button } from '../../src/components/Button';
+import { AppLogo } from '../../src/components/AppLogo';
 import { colors, spacing, radius } from '../../src/theme/colors';
 
 export default function RegisterScreen() {
@@ -58,7 +59,7 @@ export default function RegisterScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Text style={styles.emoji}>🌱</Text>
+          <AppLogo size={72} />
           <Text style={styles.title}>Criar Conta</Text>
           <Text style={styles.subtitle}>Junte-se ao AgroSat</Text>
         </View>
@@ -128,10 +129,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: spacing.xxxl,
-  },
-  emoji: {
-    fontSize: 48,
-    marginBottom: spacing.md,
+    gap: spacing.md,
   },
   title: {
     fontSize: 28,

@@ -12,6 +12,7 @@ import { Link } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { Input } from '../../src/components/Input';
 import { Button } from '../../src/components/Button';
+import { AppLogo } from '../../src/components/AppLogo';
 import { colors, spacing, radius } from '../../src/theme/colors';
 
 export default function LoginScreen() {
@@ -53,9 +54,7 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <View style={styles.logoBox}>
-            <Text style={styles.logoEmoji}>🛰️</Text>
-          </View>
+          <AppLogo size={72} />
           <Text style={styles.title}>AgroSat</Text>
           <Text style={styles.subtitle}>Monitoramento por Satélite + IA</Text>
         </View>
@@ -109,23 +108,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: spacing.xxxl,
-  },
-  logoBox: {
-    width: 72,
-    height: 72,
-    borderRadius: radius.lg,
-    backgroundColor: colors.accentPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-    shadowColor: colors.accentPrimary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  logoEmoji: {
-    fontSize: 36,
+    gap: spacing.lg,
   },
   title: {
     fontSize: 32,

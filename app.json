@@ -15,14 +15,13 @@
       "adaptiveIcon": {
         "backgroundColor": "#060d09",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "com.agrosat.com",
       "googleServicesFile": "./google-services.json"
     },
     "web": {
-      "favicon": "./assets/favicon.png",
+      "favicon": "./assets/favicon.svg",
       "bundler": "metro"
     },
     "plugins": [
@@ -30,7 +29,15 @@
       "expo-status-bar",
       "expo-secure-store",
       "expo-font",
-      "expo-splash-screen"
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#060d09"
+        }
+      ]
     ],
     "extra": {
       "commitHash": "dev",

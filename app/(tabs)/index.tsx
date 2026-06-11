@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { StatCard } from '../../src/components/StatCard';
+import { AppLogo } from '../../src/components/AppLogo';
 import { colors, spacing, radius } from '../../src/theme/colors';
 import { lavouraService } from '../../src/services/lavouraService';
 import { climateService, ClimateAnalysis } from '../../src/services/climateService';
@@ -154,7 +155,7 @@ export default function DashboardScreen() {
               Confira as métricas agroclimáticas da sua região.
             </Text>
           </View>
-          <Text style={styles.bannerEmoji}>🛰️</Text>
+          <AppLogo size={56} />
         </View>
 
         {/* Lavoura Selector */}
@@ -315,10 +316,6 @@ const styles = StyleSheet.create({
     color: colors.textDim,
     marginTop: spacing.sm,
     lineHeight: 18,
-  },
-  bannerEmoji: {
-    fontSize: 48,
-    opacity: 0.9,
   },
   selectorContainer: {
     marginHorizontal: spacing.xl,
