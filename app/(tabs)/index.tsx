@@ -2,12 +2,15 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { StatCard } from '../../src/components/StatCard';
 import { AppLogo } from '../../src/components/AppLogo';
 import { ClimateTrendChart } from '../../src/components/ClimateTrendChart';
+import { MonitoringMap, MapMarker } from '../../src/components/MonitoringMap';
 import { colors, spacing, radius } from '../../src/theme/colors';
 import { lavouraService } from '../../src/services/lavouraService';
+import { alertaService } from '../../src/services/alertaService';
 import { climateService, ClimateAnalysis } from '../../src/services/climateService';
 import { Lavoura } from '../../src/types';
 import { getAverage, getClimatePoints, getTotal } from '../../src/utils/climate';
@@ -21,12 +24,27 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const [selectedLavouraId, setSelectedLavouraId] = useState<number | null>(null);
+  // Lowercased names of lavouras that currently have an active alert.
+  const [alertedNames, setAlertedNames] = useState<Set<string>>(new Set());
 
   const fetchData = async (isRefresh = false, lavouraIdToFetch?: number) => {
     try {
       if (!isRefresh) setLoading(true);
       const data = await lavouraService.listar();
       setLavouras(data);
+
+      // Pull active alerts so we can flag affected lavouras on the map.
+      try {
+        const alerts = await alertaService.listar();
+        const names = new Set<string>();
+        alerts.forEach((a) => {
+          const match = a.mensagem.match(/lavoura:\s*([^.]+)/i);
+          if (match) names.add(match[1].trim().toLowerCase());
+        });
+        setAlertedNames(names);
+      } catch (err) {
+        console.error('Falha ao obter alertas para o mapa', err);
+      }
 
       if (data.length > 0) {
         let activeLavoura = data[0];
@@ -103,6 +121,32 @@ export default function DashboardScreen() {
   const lavouraAtual = lavouras.find(l => l.id === selectedLavouraId) || lavouras[0];
   const climatePoints = getClimatePoints(climate?.climateData);
 
+  // Markers for the dashboard map: every farm with valid coordinates, colored
+  // by status, flagged when an alert is active. Selected farm is highlighted.
+  const statusColor: Record<string, string> = {
+    ATIVA: colors.colorSuccess,
+    COLHEITA: colors.colorSolar,
+    INATIVA: colors.textDim,
+  };
+  const statusLabel: Record<string, string> = {
+    ATIVA: 'Ativa',
+    COLHEITA: 'Em colheita',
+    INATIVA: 'Inativa',
+  };
+  const plottable = lavouras.filter(
+    l => typeof l.latitude === 'number' && typeof l.longitude === 'number' && !(l.latitude === 0 && l.longitude === 0)
+  );
+  const mapMarkers: MapMarker[] = plottable.map(l => ({
+    id: String(l.id),
+    latitude: l.latitude,
+    longitude: l.longitude,
+    color: statusColor[l.status] ?? colors.accentPrimary,
+    alert: alertedNames.has(l.nome.toLowerCase()),
+    label: l.nome,
+  }));
+  const alertCount = mapMarkers.filter(m => m.alert).length;
+  const selectedOnMap = plottable.find(l => l.id === selectedLavouraId);
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView 
@@ -173,9 +217,102 @@ export default function DashboardScreen() {
           />
         </View>
 
+        {/* Monitoring Map */}
+        <Text style={[styles.sectionTitle, styles.sectionSpacer]}>Mapa de Monitoramento</Text>
+        <Text style={styles.sectionSubtitle}>
+          {mapMarkers.length > 1
+            ? 'Toque em um ponto para selecionar a lavoura'
+            : 'Posição da sua lavoura'}
+        </Text>
+
+        {/* Summary */}
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{plottable.length}</Text>
+            <Text style={styles.summaryLabel}>No mapa</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <Text style={[styles.summaryValue, { color: colors.colorWarning }]}>{alertCount}</Text>
+            <Text style={styles.summaryLabel}>Com alerta</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{lavouras.length}</Text>
+            <Text style={styles.summaryLabel}>Lavouras</Text>
+          </View>
+        </View>
+
+        <MonitoringMap
+          markers={mapMarkers}
+          selectedId={selectedLavouraId ? String(selectedLavouraId) : null}
+          onSelect={(id) => fetchData(false, Number(id))}
+          height={260}
+        />
+
+        {/* Legend */}
+        <View style={styles.legend}>
+          <LegendDot color={statusColor.ATIVA} label="Ativa" />
+          <LegendDot color={statusColor.COLHEITA} label="Colheita" />
+          <LegendDot color={statusColor.INATIVA} label="Inativa" />
+          <LegendDot color={colors.colorWarning} label="Alerta ativo" ring />
+        </View>
+
+        {/* Selected farm detail */}
+        {selectedOnMap && (
+          <View style={styles.detailCard}>
+            <View style={styles.detailHeader}>
+              <Ionicons name="location" size={18} color={colors.accentPrimary} />
+              <Text style={styles.detailTitle}>{selectedOnMap.nome}</Text>
+            </View>
+            <View style={styles.detailMeta}>
+              <DetailChip icon="leaf-outline" text={selectedOnMap.tipo} />
+              <DetailChip
+                icon="ellipse"
+                text={statusLabel[selectedOnMap.status] ?? selectedOnMap.status}
+                color={statusColor[selectedOnMap.status]}
+              />
+              <DetailChip icon="resize-outline" text={`${selectedOnMap.area} ha`} />
+            </View>
+            {alertedNames.has(selectedOnMap.nome.toLowerCase()) && (
+              <View style={styles.alertBanner}>
+                <Ionicons name="warning" size={14} color={colors.colorWarning} />
+                <Text style={styles.alertBannerText}>Alerta ativo nesta lavoura</Text>
+              </View>
+            )}
+            <Text style={styles.detailCoords}>
+              {selectedOnMap.latitude.toFixed(4)}, {selectedOnMap.longitude.toFixed(4)}
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.sectionSpacer} />
         <ClimateTrendChart points={climatePoints} />
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function LegendDot({ color, label, ring }: { color: string; label: string; ring?: boolean }) {
+  return (
+    <View style={styles.legendItem}>
+      <View
+        style={[
+          styles.legendDot,
+          { backgroundColor: ring ? 'transparent' : color, borderColor: color, borderWidth: ring ? 2 : 0 },
+        ]}
+      />
+      <Text style={styles.legendLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function DetailChip({ icon, text, color }: { icon: any; text: string; color?: string }) {
+  return (
+    <View style={styles.chip}>
+      <Ionicons name={icon} size={12} color={color ?? colors.textMuted} />
+      <Text style={styles.chipText}>{text}</Text>
+    </View>
   );
 }
 
@@ -312,5 +449,115 @@ const styles = StyleSheet.create({
   },
   statsGrid: {
     gap: spacing.md,
+  },
+  sectionSpacer: {
+    marginTop: spacing.xxl,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.borderPrimary,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
+  },
+  summaryItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  summaryValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  summaryLabel: {
+    fontSize: 11,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: 2,
+  },
+  summaryDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: colors.borderPrimary,
+  },
+  legend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.xs,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: radius.full,
+  },
+  legendLabel: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  detailCard: {
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.borderHover,
+    padding: spacing.lg,
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  detailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  detailTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  detailMeta: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: colors.bgGlass,
+    borderRadius: radius.sm,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  chipText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  alertBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.alertDrought,
+    borderRadius: radius.sm,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  alertBannerText: {
+    fontSize: 12,
+    color: colors.colorWarning,
+    fontWeight: '600',
+  },
+  detailCoords: {
+    fontSize: 12,
+    color: colors.textDim,
   },
 });
